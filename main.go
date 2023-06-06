@@ -18,6 +18,7 @@ type Link struct {
 	URL       string    `json:"url"`
 	Domain    string    `json:"domain"`
 	CreatedAt time.Time `json:"date"`
+	ValidUrl  bool      `json:"validurl"`
 }
 
 func main() {
@@ -51,11 +52,24 @@ func SaveLongLink(c *gin.Context) {
 		return
 	}
 	reqBody.CreatedAt = time.Now()
-	reqBody.Domain = getdomain(reqBody.URL)
+	reqBody.Domain, err = getdomain(reqBody.URL)
+	if err != nil {
+		// res := gin.H{
+		// 	"error": "invalid url",
+		// }
+		// c.Writer.Header().Set("Content-Type", "application/json")
+		// c.JSON(http.StatusBadRequest, res)
+		// return
+		reqBody.ValidUrl = false
+	} else {
+		reqBody.ValidUrl = true
+	}
+	//reqBody.ValidUrl = validurl(reqBody.URL)
+
 	// Data[lastID] = reqBody
 	fmt.Println(reqBody)
-	res, err := DB.Exec(`INSERT INTO "url" ("url", "domain", "created_at")
-	VALUES ( $1, $2, $3)`, reqBody.URL, reqBody.Domain, reqBody.CreatedAt)
+	res, err := DB.Exec(`INSERT INTO "url" ("url", "domain", "created_at", "validurl")
+	VALUES ( $1, $2, $3, $4)`, reqBody.URL, reqBody.Domain, reqBody.CreatedAt, reqBody.ValidUrl)
 	if err != nil {
 		fmt.Println("err inserting data: ", err)
 		c.Writer.Header().Set("Content-Type", "application/json")
